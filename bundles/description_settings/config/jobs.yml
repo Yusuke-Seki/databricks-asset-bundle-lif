@@ -1,0 +1,31 @@
+permissions: &permissions
+  permissions:
+    - level: CAN_VIEW
+      group_name: users
+
+job_cluster: &job_cluster
+  new_cluster:
+    policy_id: ${var.job_cluster_policy}
+    spark_version: 15.4.x-scala2.12
+    driver_node_type_id: m5d.large
+    node_type_id: m5d.large
+    runtime_engine: PHOTON
+    autoscale:
+      min_workers: 1
+      max_workers: 2
+    custom_tags:
+      bundle_name: datasteward_description_settings
+
+resources:
+  jobs:
+    batch_job:
+      name: description_settings-job-batch
+      <<: *permissions
+      job_clusters:
+        - job_cluster_key: description_settings-job-batch-cluster
+          <<: *job_cluster
+      tasks:
+        - task_key: main
+          job_cluster_key: description_settings-job-batch-cluster
+          notebook_task:
+            notebook_path: ../src/main.ipynb

@@ -1,0 +1,14 @@
+# # The main pipeline for description_settings
+# resources:
+#   pipelines:
+#     description_settings_pipeline:
+#       name: description_settings_pipeline
+#       catalog: sandbox_lif
+#       schema: description_settings_${bundle.target}
+#       serverless: true
+#       libraries:
+#         - notebook:
+#             path: ../src/dlt_pipeline.ipynb
+
+#       configuration:
+#         bundle.sourcePath: ${workspace.file_path}/src
