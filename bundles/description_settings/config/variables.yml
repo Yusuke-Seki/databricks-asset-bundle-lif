@@ -1,0 +1,14 @@
+variables:
+  job_cluster_policy:
+    description: The ID of the cluster policy used to create the cluster if applicable.
+  # webhook_notifications:
+  #   description: Job webhook notifications to slack
+  #   type: complex
+
+targets:
+  dev:
+    variables:
+      job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
+      # webhook_notifications:
+      #   on_failure:
+      #     - id: 
