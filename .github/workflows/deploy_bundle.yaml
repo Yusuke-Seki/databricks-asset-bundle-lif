@@ -1,0 +1,52 @@
+name: Deploy Bundle
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        required: true
+        type: string
+      bundle:
+        required: true
+        type: string
+      git_branch:
+        required: true
+        type: string
+
+jobs:
+  deploy_bundle:
+    runs-on: [self-hosted, organization]
+    environment: ${{ inputs.stage }}
+
+    steps:
+      - name: Checkout code into workspace directory
+        uses: actions/checkout@v4
+
+      - name: Configure Databricks credentials
+        id: setup
+        uses: databricks/setup-cli@main
+
+      - name: Deploy bundle
+        if: startsWith(inputs.bundle, '_') != true
+        run: |
+          echo "Deploy ${{ inputs.bundle }}"
+          databricks bundle deploy -t ${{ inputs.stage }} \
+            --var="git_branch=${{ inputs.git_branch }}" \
+        working-directory: bundles/${{ inputs.bundle }}
+        env:
+            DATABRICKS_BUNDLE_ENV: ${{ inputs.stage }}
+            DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+            DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+            DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+        
+      - name: Run bundle deploy scripts
+        if: startsWith(inputs.bundle, '_') != true
+        run: |
+          echo "Deploy ${{ inputs.bundle }}"
+          bash deploy.sh
+        working-directory: bundles/${{ inputs.bundle }}
+        env:
+            DATABRICKS_BUNDLE_ENV: ${{ inputs.stage }}
+            DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+            DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+            DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}

@@ -12,3 +12,5 @@ targets:
       # webhook_notifications:
       #   on_failure:
       #     - id: 
+    run_as:
+      service_principal_name: 98577864-8b37-4796-ba5e-db94fd72bfdb

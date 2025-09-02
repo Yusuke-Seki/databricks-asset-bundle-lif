@@ -1,7 +1,9 @@
 permissions: &permissions
   permissions:
-    - level: CAN_VIEW
-      group_name: users
+    # - group_name: steward
+    #   level: CAN_MANAGE_RUN 
+    - group_name: users
+      level: CAN_VIEW
 
 job_cluster: &job_cluster
   new_cluster:
@@ -13,6 +15,9 @@ job_cluster: &job_cluster
     autoscale:
       min_workers: 1
       max_workers: 2
+    aws_attributes:
+      first_on_demand: 1
+      availability: SPOT_WITH_FALLBACK
     custom_tags:
       bundle_name: datasteward_description_settings
 

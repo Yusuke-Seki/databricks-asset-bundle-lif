@@ -1,0 +1,29 @@
+name: Deploy Bundle
+
+on:
+  workflow_call:
+    outputs:
+      bundles:
+        description: "List of the bundle to deploy"
+        value: ${{ jobs.grep_bundles.outputs.bundles }}
+
+jobs:
+  grep_bundles:
+    runs-on: [self-hosted, organization]
+    outputs:
+      bundles: ${{ steps.define_bundles.outputs.bundles }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: define_bundles
+        run: |
+          bundles=`git diff --name-only HEAD^ -- bundles/ | tr '/' '\t' | cut -f 2 | sort -u | jq -R . | jq -s -c .`
+          if [ -n "`git diff --name-only HEAD^ -- packages/`" ]; then
+            bundles=`echo $bundles | jq -c '. |= .+["_common"]'`
+          fi
+          echo "bundles=$bundles" >> $GITHUB_OUTPUT
+      - run: echo "${{ steps.define_bundles.outputs.bundles }}"
