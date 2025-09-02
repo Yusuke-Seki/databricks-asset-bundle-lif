@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/grep_bundles.yaml
 
   get_branch:
-    runs-on: [self-hosted, organization]
+    runs-on: ubuntu-latest
     outputs:
       bundles: ${{ steps.get_branch.outputs.branch }}
     steps:

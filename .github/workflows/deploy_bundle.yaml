@@ -15,7 +15,7 @@ on:
 
 jobs:
   deploy_bundle:
-    runs-on: [self-hosted, organization]
+    runs-on: ubuntu-latest
     environment: ${{ inputs.stage }}
 
     steps:
