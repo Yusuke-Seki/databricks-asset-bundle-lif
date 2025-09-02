@@ -9,7 +9,7 @@ on:
 
 jobs:
   grep_bundles:
-    runs-on: [self-hosted, organization]
+    runs-on: ubuntu-latest
     outputs:
       bundles: ${{ steps.define_bundles.outputs.bundles }}
 
