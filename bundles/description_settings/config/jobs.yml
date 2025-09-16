@@ -20,6 +20,8 @@ job_cluster: &job_cluster
       availability: SPOT_WITH_FALLBACK
     custom_tags:
       bundle_name: datasteward_description_settings
+    spark_env_vars:
+      STAGE: ${var.spark_env_vars}
 
 resources:
   jobs:
@@ -37,5 +39,3 @@ resources:
       parameters:
         - name: SOURCE_TABLE
           default: ${var.source_table}
-        - name: ADDITIONAL_WHERE_TEXT
-          default: ${var.additional_where_text}
