@@ -1,0 +1,31 @@
+name: Deploy to the development
+
+concurrency: 1
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - closed
+    paths-ignore:
+      - ".github/**"
+      - "README.md"
+
+jobs:
+  set_list:
+    uses: ./.github/workflows/grep_bundles.yaml
+
+  deploy_bundles:
+    needs: [set_list]
+    if: needs.set_list.outputs.bundles != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle: ${{ fromJSON(needs.set_list.outputs.bundles )}}
+    uses: ./.github/workflows/deploy_bundle.yaml
+    with:
+      stage: prod
+      bundle: ${{ matrix.bundle }}
+      git_branch: master
+    secrets: inherit

@@ -40,7 +40,7 @@ jobs:
             DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
         
       - name: Run bundle deploy scripts
-        if: startsWith(inputs.bundle, '_') != true
+        if: startsWith(inputs.bundle, '_')
         run: |
           echo "Deploy ${{ inputs.bundle }}"
           bash deploy.sh
