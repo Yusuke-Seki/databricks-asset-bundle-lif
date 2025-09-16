@@ -3,8 +3,8 @@ variables:
     description: The ID of the cluster policy used to create the cluster if applicable.
   source_table:
     description: "更新対象が格納されているテーブル"
-  sql_text:
-    description: "更新対象を取得するためのSQL本文"
+  additional_where_text:
+    description: "追加するWHERE句の条件文"
   # webhook_notifications:
   #   description: Job webhook notifications to slack
   #   type: complex
@@ -15,7 +15,7 @@ targets:
     variables:
       job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
       source_table: dataplatform_public_published_dev.datasteward.description_settings
-      sql_text: SELECT * FROM ${var.source_table} WHERE catalog RLIKE '_dev$'
+      additional_where_text: AND catalog RLIKE '_dev$'
       # webhook_notifications:
       #   on_failure:
       #     - id: 
@@ -26,7 +26,6 @@ targets:
     variables:
       job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
       source_table: dataplatform_public_published.datasteward.description_settings
-      sql_text: SELECT * FROM ${var.source_table}
       # webhook_notifications:
       #   on_failure:
       #     - id: 

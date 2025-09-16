@@ -37,5 +37,5 @@ resources:
       parameters:
         - name: SOURCE_TABLE
           default: ${var.source_table}
-        - name: SQL_TEXT
-          default: ${var.sql_text}
+        - name: ADDITIONAL_WHERE_TEXT
+          default: ${var.additional_where_text}
