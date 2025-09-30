@@ -630,7 +630,7 @@
             "name": "faead280",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のスキーマ："
+                "## 不一致のスキーマ："
               ]
             }
           },
@@ -646,7 +646,7 @@
             "name": "16a80d99",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のテーブル："
+                "## 不一致のテーブル："
               ]
             }
           },
@@ -1114,7 +1114,7 @@
             "name": "ada8f4e6",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のマテビュー："
+                "## 不一致のマテビュー："
               ]
             }
           },
@@ -1574,7 +1574,7 @@
             "x": 0,
             "y": 16,
             "width": 6,
-            "height": 6
+            "height": 5
           }
         },
         {
@@ -1582,13 +1582,13 @@
             "name": "dd40eb12",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のビューテーブル："
+                "## 不一致のビューテーブル："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 22,
+            "y": 21,
             "width": 6,
             "height": 1
           }
@@ -2040,78 +2040,13 @@
           },
           "position": {
             "x": 0,
-            "y": 23,
+            "y": 22,
             "width": 6,
             "height": 6
           }
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
-    },
-    {
-      "name": "33cab572",
-      "displayName": "Global Filters",
-      "layout": [
-        {
-          "widget": {
-            "name": "6f06efb3",
-            "queries": [
-              {
-                "name": "dashboards/01f09d03bf711ccbac55e37e223e0bcd/datasets/01f09d03c8d11db9be44a01e6a6f302d_table_category",
-                "query": {
-                  "datasetName": "1d0a1089",
-                  "fields": [
-                    {
-                      "name": "table_category",
-                      "expression": "`table_category`"
-                    },
-                    {
-                      "name": "table_category_associativity",
-                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "filter-single-select",
-              "encodings": {
-                "fields": [
-                  {
-                    "fieldName": "table_category",
-                    "displayName": "table_category",
-                    "queryName": "dashboards/01f09d03bf711ccbac55e37e223e0bcd/datasets/01f09d03c8d11db9be44a01e6a6f302d_table_category"
-                  }
-                ]
-              },
-              "frame": {
-                "showTitle": true
-              },
-              "selection": {
-                "defaultSelection": {
-                  "values": {
-                    "dataType": "INTEGER",
-                    "values": [
-                      {
-                        "value": "0"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
-        }
-      ],
-      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
     }
   ],
   "uiSettings": {
