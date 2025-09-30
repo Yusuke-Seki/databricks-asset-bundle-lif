@@ -1,0 +1,14 @@
+permissions: &permissions
+  permissions:
+    # - group_name: steward
+    #   level: CAN_MANAGE_RUN 
+    - group_name: users
+      level: CAN_VIEW
+
+resources:
+  dashboards:
+    description_checkings:
+      display_name: "Description Checkings"
+      file_path: ../dashboards/main.lvdash.json
+      warehouce_id: ${var.warehouce_id}
+      <<: *permissions
