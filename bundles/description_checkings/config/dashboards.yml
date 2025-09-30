@@ -10,5 +10,5 @@ resources:
     description_checkings:
       display_name: "Description Checkings"
       file_path: ../dashboards/main.lvdash.json
-      warehouce_id: ${var.warehouce_id}
       <<: *permissions
+      warehouse_id: ${var.warehouse_id}
