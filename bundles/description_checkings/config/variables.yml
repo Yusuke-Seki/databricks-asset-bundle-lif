@@ -2,7 +2,7 @@ variables:
   job_cluster_policy:
     description: The ID of the cluster policy used to create the cluster if applicable.
   warehouce_id:
-    description: ダッシュボードに使用するSQL_WAREHOUSE_ID
+    description: "ダッシュボードに使用するSQL_WAREHOUSE_ID"
   source_table:
     description: "更新対象が格納されているテーブル"
   spark_env_vars:
