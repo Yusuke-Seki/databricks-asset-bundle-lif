@@ -3,5 +3,5 @@ variables:
     description: Common dependent libraries in workspace.
     default: /Volumes/common/tools/artifacts/.internal/requirements.txt
   git_branch:
-    decription: Git branch name of the bundle to deploy.
+    description: Git branch name of the bundle to deploy.
     default: develop

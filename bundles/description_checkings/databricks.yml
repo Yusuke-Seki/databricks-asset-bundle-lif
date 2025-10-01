@@ -1,0 +1,8 @@
+# This is a Databricks asset bundle definition for description_settings.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: description_checkings
+
+include:
+  - ../../config/bundle*.yml
+  - config/*.yml

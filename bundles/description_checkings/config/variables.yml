@@ -1,0 +1,38 @@
+variables:
+  job_cluster_policy:
+    description: The ID of the cluster policy used to create the cluster if applicable.
+  warehouse_id:
+    description: "ダッシュボードに使用するSQL_WAREHOUSE_ID"
+  source_table:
+    description: "更新対象が格納されているテーブル"
+  spark_env_vars:
+    description: "環境名（編集不可の環境変数を利用するのに使用する）"
+  # webhook_notifications:
+  #   description: Job webhook notifications to slack
+  #   type: complex
+
+targets:
+  dev:
+    default: true
+    variables:
+      job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
+      warehouse_id: 063f605bedb825d2       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
+      source_table: dataplatform_public_published_dev.datasteward.tag_settings
+      spark_env_vars: dev
+      # webhook_notifications:
+      #   on_failure:
+      #     - id: 
+    # run_as:
+    #   service_principal_name: ec19831e-e548-4bcd-baac-04bcc83783b1
+  
+  prod:
+    variables:
+      job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
+      warehouse_id: 063f605bedb825d2       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
+      source_table: dataplatform_public_published.datasteward.tag_settings
+      spark_env_vars: prod
+      # webhook_notifications:
+      #   on_failure:
+      #     - id: 
+    # run_as:
+    #   service_principal_name: ec19831e-e548-4bcd-baac-04bcc83783b1

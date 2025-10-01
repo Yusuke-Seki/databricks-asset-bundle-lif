@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    description_checkings:
+      display_name: "Metadata Management"
+      file_path: ../dashboards/main.lvdash.json
+      warehouse_id: ${var.warehouse_id}
