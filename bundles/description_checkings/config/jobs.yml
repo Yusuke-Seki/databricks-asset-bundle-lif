@@ -19,19 +19,19 @@ job_cluster: &job_cluster
       first_on_demand: 1
       availability: SPOT_WITH_FALLBACK
     custom_tags:
-      bundle_name: datasteward_metadata_management
+      bundle_name: description_checkings
 
 resources:
   jobs:
     task:
-      name: metadata-management-job
+      name: description_checkings-job
       <<: *permissions
       job_clusters:
-        - job_cluster_key: metadata_management-job-cluster
+        - job_cluster_key: description_checkings-job-cluster
           <<: *job_cluster
       tasks:
         - task_key: create_udfs
-          job_cluster_key: metadata_management-job-cluster
+          job_cluster_key: description_checkings-job-cluster
           sql_task:
             file:
               path: ../src/create_udfs.sql
