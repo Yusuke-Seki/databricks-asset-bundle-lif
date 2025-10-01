@@ -32,6 +32,7 @@ jobs:
           echo "Deploy ${{ inputs.bundle }}"
           databricks bundle deploy -t ${{ inputs.stage }} \
             --var="git_branch=${{ inputs.git_branch }}" \
+            --force
         working-directory: bundles/${{ inputs.bundle }}
         env:
             DATABRICKS_BUNDLE_ENV: ${{ inputs.stage }}
