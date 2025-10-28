@@ -24,21 +24,23 @@ job_cluster: &job_cluster
 resources:
   jobs:
     task:
-      name: metadata-management-job
+      name: metadata-quality-preprocessing-job
       <<: *permissions
       job_clusters:
-        - job_cluster_key: metadata_management-job-cluster
+        - job_cluster_key: metadata-quality-preprocessing-job-cluster
           <<: *job_cluster
       tasks:
         - task_key: deploy_udfs
-          job_cluster_key: metadata_management-job-cluster
+          job_cluster_key: metadata-quality-preprocessing-job-cluster
           description: "UDFの作成／更新処理"
           notebook_task:
             notebook_path: ../src/deploy_udfs.ipynb
             base_parameters:
               SOURCE_CATALOG: ${var.source_catalog}
-        - task_key: deploy_view
-          job_cluster_key: metadata_management-job-cluster
+        - task_key: deploy_views
+          depends_on:
+            - task_key: deploy_udfs
+          job_cluster_key: metadata-quality-preprocessing-job-cluster
           description: "ビューテーブル(データマート)の作成／更新処理"
           notebook_task:
             notebook_path: ../src/deploy_views.ipynb
