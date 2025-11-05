@@ -6,3 +6,7 @@ bundle:
 include:
   - ../../config/bundle*.yml
   - config/*.yml
+
+permissions:
+  - level: CAN_VIEW
+    group_name: users

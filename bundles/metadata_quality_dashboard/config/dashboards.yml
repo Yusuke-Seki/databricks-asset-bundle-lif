@@ -1,6 +1,12 @@
-# resources:
-#   dashboards:
-#     description_checkings:
-#       display_name: "Metadata Quality Dashboard"
-#       file_path: ../dashboards/main.lvdash.json
-#       warehouse_id: ${var.warehouse_id}
+permissions: &permissions
+  permissions:
+    - level: CAN_VIEW
+      group_name: users
+
+resources:
+  dashboards:
+    description_checkings:
+      display_name: "Metadata Quality Dashboard"
+      file_path: ../dashboards/main.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      <<: *permissions
