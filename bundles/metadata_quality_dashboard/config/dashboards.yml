@@ -1,6 +1,6 @@
 permissions: &permissions
   permissions:
-    - level: CAN_VIEW
+    - level: CAN_READ
       group_name: users
 
 resources:
