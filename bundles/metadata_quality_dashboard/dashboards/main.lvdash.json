@@ -4,114 +4,14 @@
       "name": "1d0a1089",
       "displayName": "description_checkings",
       "queryLines": [
-        "WITH description_settings AS (\r\n",
-        "  SELECT\r\n",
-        "    LOWER(catalog)                AS catalog_name,\r\n",
-        "    LOWER(schema)                 AS schema_name,\r\n",
-        "    LOWER(COALESCE(table, ''))    AS table_name,\r\n",
-        "    COALESCE(name_ja, '')         AS name_ja,\r\n",
-        "    table_category                AS table_category,\r\n",
-        "    COALESCE(cron_schedule, '')   AS cron_schedule,\r\n",
-        "    COALESCE(explanation, '')     AS explanation,\r\n",
-        "    COALESCE(type_conversion, '') AS type_conversion,\r\n",
-        "    COALESCE(rule, '')            AS rule,\r\n",
-        "    COALESCE(link, '')            AS link,\r\n",
-        "    COALESCE(query, '')           AS query,\r\n",
-        "    COALESCE(reference, '')       AS reference\r\n",
-        "  FROM\r\n",
-        "    dataplatform_public_published_dev.datasteward.description_settings\r\n",
-        "  WHERE\r\n",
-        "    catalog RLIKE '_dev$'\r\n",
-        "),\r\n",
-        "actual_description AS (\r\n",
-        "  SELECT\r\n",
-        "    LOWER(catalog_name) AS catalog_name,\r\n",
-        "    LOWER(schema_name)  AS schema_name,\r\n",
-        "    NULL                AS table_name,\r\n",
-        "    0                   AS table_category,\r\n",
-        "    comment             AS description\r\n",
-        "  FROM\r\n",
-        "    system.information_schema.schemata\r\n",
-        "  WHERE TRUE\r\n",
-        "    AND catalog_name NOT IN (\"system\", \"samples\")\r\n",
-        "    AND schema_name NOT IN (\"information_schema\")\r\n",
-        "\r\n",
-        "  UNION ALL\r\n",
-        "\r\n",
-        "  SELECT\r\n",
-        "    LOWER(table_catalog) AS catalog_name,\r\n",
-        "    LOWER(table_schema)  AS schema_name,\r\n",
-        "    LOWER(table_name)    AS table_name,\r\n",
-        "    CASE table_type\r\n",
-        "      WHEN \"MANAGED\" THEN 1\r\n",
-        "      WHEN \"MATERIALIZED_VIEW\" THEN 2\r\n",
-        "      WHEN \"VIEW\" THEN 3\r\n",
-        "      ELSE NULL\r\n",
-        "    END AS table_category,\r\n",
-        "    comment             AS description\r\n",
-        "  FROM\r\n",
-        "    system.information_schema.tables\r\n",
-        "  WHERE TRUE\r\n",
-        "    AND table_catalog NOT IN (\"system\", \"samples\")\r\n",
-        "    AND table_schema NOT IN (\"information_schema\")\r\n",
-        "),\r\n",
-        "current_descriptions AS (\r\n",
-        "  SELECT *, dataplatform_public_published_dev.datasteward.generate_description_schema(name_ja, explanation) AS description\r\n",
-        "  FROM description_settings\r\n",
-        "  WHERE table_category = 0\r\n",
-        "\r\n",
-        "  UNION ALL\r\n",
-        "\r\n",
-        "  SELECT *, dataplatform_public_published_dev.datasteward.generate_description_table(name_ja, explanation, type_conversion, rule, cron_schedule, query, reference, link) AS description\r\n",
-        "  FROM description_settings\r\n",
-        "  WHERE table_category = 1 AND catalog_name LIKE '%staging%'\r\n",
-        "\r\n",
-        "  UNION ALL\r\n",
-        "\r\n",
-        "  SELECT *, dataplatform_public_published_dev.datasteward.generate_description_table(name_ja, explanation, type_conversion, rule, cron_schedule, query, reference, \"\") AS description\r\n",
-        "  FROM description_settings\r\n",
-        "  WHERE table_category = 1 AND (catalog_name LIKE '%conformed%' OR catalog_name LIKE '%published%')\r\n",
-        "\r\n",
-        "  UNION ALL\r\n",
-        "\r\n",
-        "  SELECT *, dataplatform_public_published_dev.datasteward.generate_description_view(name_ja, cron_schedule, reference) AS description\r\n",
-        "  FROM description_settings\r\n",
-        "  WHERE table_category = 2 OR table_category = 3\r\n",
-        ")\r\n",
-        "SELECT \r\n",
-        "  COALESCE(actual_description.catalog_name, current_descriptions.catalog_name) AS catalog_name,\r\n",
-        "  COALESCE(actual_description.schema_name, current_descriptions.schema_name) AS schema_name,\r\n",
-        "  COALESCE(actual_description.table_name, current_descriptions.table_name) AS table_name,\r\n",
-        "  COALESCE(actual_description.table_category, current_descriptions.table_category) AS table_category,\r\n",
-        "  current_descriptions.name_ja,\r\n",
-        "  current_descriptions.cron_schedule,\r\n",
-        "  current_descriptions.explanation,\r\n",
-        "  current_descriptions.type_conversion,\r\n",
-        "  current_descriptions.rule,\r\n",
-        "  current_descriptions.link,\r\n",
-        "  current_descriptions.query,\r\n",
-        "  current_descriptions.reference,\r\n",
-        "  actual_description.description AS actual_description,\r\n",
-        "  current_descriptions.description AS current_description,\r\n",
-        "  CASE\r\n",
-        "    WHEN actual_description.table_category   IS NULL AND current_descriptions.table_category IS NOT NULL THEN 1\r\n",
-        "    WHEN current_descriptions.table_category IS NULL AND actual_description.table_category   IS NOT NULL THEN 2\r\n",
-        "    WHEN actual_description.description = current_descriptions.description THEN 0\r\n",
-        "    ELSE 3\r\n",
-        "  END AS status\r\n",
-        "FROM \r\n",
-        "  actual_description\r\n",
-        "  FULL OUTER JOIN current_descriptions\r\n",
-        "    ON actual_description.catalog_name = current_descriptions.catalog_name\r\n",
-        "    AND actual_description.schema_name = current_descriptions.schema_name\r\n",
-        "    AND actual_description.table_name = current_descriptions.table_name\r\n",
-        "    AND actual_description.table_category = current_descriptions.table_category\r\n"
+        "SELECT *\r\n",
+        "FROM dataplatform_public_published_dev.datasteward.m_metadata_quality_descriptions"
       ],
       "columns": [
         {
           "displayName": "match_rate",
           "description": "",
-          "expression": "COUNT_IF(status = 0)/COUNT(*)"
+          "expression": "COUNT_IF(flg_diff = 0)/COUNT(*)"
         }
       ],
       "catalog": "dataplatform_public_published_dev",
@@ -121,86 +21,14 @@
       "name": "dcf82608",
       "displayName": "tag_checkings",
       "queryLines": [
-        "WITH current_tags AS (\r\n",
-        "  SELECT\r\n",
-        "    LOWER(catalog)                AS catalog_name,\r\n",
-        "    LOWER(schema)                 AS schema_name,\r\n",
-        "    LOWER(COALESCE(table, ''))    AS table_name,\r\n",
-        "    table_category                AS table_category,\r\n",
-        "    COALESCE(tag_key, '')         AS tag_key,\r\n",
-        "    COALESCE(tag_value, '')       AS tag_value\r\n",
-        "  FROM\r\n",
-        "    dataplatform_public_published_dev.datasteward.tag_settings\r\n",
-        "  WHERE\r\n",
-        "    catalog RLIKE '_dev$'\r\n",
-        "),\r\n",
-        "actual_tags AS (\r\n",
-        "  SELECT\r\n",
-        "    LOWER(catalog_name) AS catalog_name,\r\n",
-        "    LOWER(schema_name)  AS schema_name,\r\n",
-        "    ''                  AS table_name,\r\n",
-        "    0                   AS table_category,\r\n",
-        "    tag_name            AS tag_key,\r\n",
-        "    tag_value           AS tag_value\r\n",
-        "  FROM\r\n",
-        "    system.information_schema.schema_tags\r\n",
-        "  WHERE TRUE\r\n",
-        "    AND catalog_name NOT IN (\"system\", \"samples\")\r\n",
-        "    AND schema_name  NOT IN (\"information_schema\")\r\n",
-        "\r\n",
-        "  UNION ALL\r\n",
-        "\r\n",
-        "  SELECT\r\n",
-        "    LOWER(tags.catalog_name) AS catalog_name,\r\n",
-        "    LOWER(tags.schema_name)  AS schema_name,\r\n",
-        "    LOWER(tags.table_name)   AS table_name,\r\n",
-        "    CASE tables.table_type\r\n",
-        "      WHEN \"MANAGED\" THEN 1\r\n",
-        "      WHEN \"MATERIALIZED_VIEW\" THEN 2\r\n",
-        "      WHEN \"VIEW\" THEN 3\r\n",
-        "      ELSE NULL\r\n",
-        "    END AS table_category,\r\n",
-        "    tags.tag_name            AS tag_key,\r\n",
-        "    tags.tag_value           AS tag_value\r\n",
-        "  FROM\r\n",
-        "    system.information_schema.table_tags AS tags\r\n",
-        "    LEFT JOIN system.information_schema.tables tables\r\n",
-        "    ON tags.catalog_name = tables.table_catalog\r\n",
-        "    AND tags.schema_name = tables.table_schema\r\n",
-        "    AND tags.table_name = tables.table_name\r\n",
-        "  WHERE TRUE\r\n",
-        "    AND catalog_name NOT IN (\"system\", \"samples\")\r\n",
-        "    AND schema_name  NOT IN (\"information_schema\")\r\n",
-        ")\r\n",
-        "SELECT\r\n",
-        "  COALESCE(actual_tags.catalog_name, current_tags.catalog_name) AS catalog_name,\r\n",
-        "  COALESCE(actual_tags.schema_name, current_tags.schema_name) AS schema_name,\r\n",
-        "  COALESCE(actual_tags.table_name, current_tags.table_name) AS table_name,\r\n",
-        "  COALESCE(actual_tags.table_category, current_tags.table_category) AS table_category,\r\n",
-        "  actual_tags.tag_key AS actual_tag_key,\r\n",
-        "  actual_tags.tag_value AS actual_tag_value,\r\n",
-        "  current_tags.tag_key AS current_tag_key,\r\n",
-        "  current_tags.tag_value AS current_tag_value,\r\n",
-        "  CASE\r\n",
-        "    WHEN actual_tags.tag_key   IS NULL AND current_tags.tag_key IS NOT NULL THEN 1\r\n",
-        "    WHEN current_tags.tag_key  IS NULL AND actual_tags.tag_key  IS NOT NULL THEN 2\r\n",
-        "    WHEN (actual_tags.tag_key = current_tags.tag_key) AND (actual_tags.tag_value = current_tags.tag_value) THEN 0\r\n",
-        "    ELSE 3\r\n",
-        "END AS status\r\n",
-        "FROM \r\n",
-        "  actual_tags\r\n",
-        "  FULL OUTER JOIN current_tags\r\n",
-        "  ON actual_tags.catalog_name = current_tags.catalog_name\r\n",
-        "  AND actual_tags.schema_name = current_tags.schema_name\r\n",
-        "  AND actual_tags.table_name = current_tags.table_name\r\n",
-        "  AND actual_tags.table_category = current_tags.table_category\r\n",
-        "  AND actual_tags.tag_key = current_tags.tag_key\r\n"
+        "SELECT *\r\n",
+        "FROM dataplatform_public_published_dev.datasteward.m_metadata_quality_tags"
       ],
       "columns": [
         {
           "displayName": "match_rate",
           "description": "",
-          "expression": "COUNT_IF(status = 0)/COUNT(*)"
+          "expression": "COUNT_IF(flg_diff = 0)/COUNT(*)"
         }
       ],
       "catalog": "dataplatform_public_published_dev",
@@ -243,7 +71,7 @@
                       "expression": "`table_category` IN (0)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -279,8 +107,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "catalog_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "schema_name",
@@ -306,8 +133,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "schema_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "actual_description",
@@ -333,8 +159,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "actual_description"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "current_description",
@@ -360,8 +185,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "current_description"
+                    "preserveWhitespace": false
                   }
                 ]
               },
@@ -631,13 +455,38 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100014,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "refreshed_at_jst",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100015,
+                  "title": "refreshed_at_jst",
+                  "allowSearch": false,
+                  "alignContent": "left",
                   "allowHTML": false,
                   "highlightLinks": false,
                   "useMonospaceFont": false,
@@ -653,7 +502,7 @@
           },
           "position": {
             "x": 0,
-            "y": 3,
+            "y": 8,
             "width": 6,
             "height": 5
           }
@@ -682,31 +531,40 @@
               "encodings": {
                 "value": {
                   "fieldName": "measure(match_rate)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
                   "displayName": "match_rate"
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "一致率",
+                "showDescription": false,
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "light": "#11171C",
+                  "dark": "#11171C"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5F5F5",
+                "dark": "#F5F5F5"
               }
             }
           },
           "position": {
-            "x": 1,
-            "y": 0,
-            "width": 5,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "09a2e241",
-            "multilineTextboxSpec": {
-              "lines": [
-                "# 一致率："
-              ]
-            }
-          },
-          "position": {
             "x": 0,
-            "y": 0,
-            "width": 1,
+            "y": 5,
+            "width": 2,
             "height": 2
           }
         },
@@ -715,13 +573,13 @@
             "name": "faead280",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のスキーマ："
+                "## 不一致のスキーマ："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 7,
             "width": 6,
             "height": 1
           }
@@ -731,13 +589,13 @@
             "name": "16a80d99",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のテーブル："
+                "## 不一致のテーブル："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 8,
+            "y": 13,
             "width": 6,
             "height": 1
           }
@@ -777,7 +635,7 @@
                       "expression": "`table_category` IN (1)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -813,8 +671,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "catalog_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "schema_name",
@@ -840,8 +697,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "schema_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "table_name",
@@ -867,8 +723,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "table_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "actual_description",
@@ -894,8 +749,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "actual_description"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "current_description",
@@ -921,8 +775,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "current_description"
+                    "preserveWhitespace": false
                   }
                 ]
               },
@@ -1167,13 +1020,38 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100014,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "refreshed_at_jst",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100015,
+                  "title": "refreshed_at_jst",
+                  "allowSearch": false,
+                  "alignContent": "left",
                   "allowHTML": false,
                   "highlightLinks": false,
                   "useMonospaceFont": false,
@@ -1189,7 +1067,7 @@
           },
           "position": {
             "x": 0,
-            "y": 9,
+            "y": 14,
             "width": 6,
             "height": 6
           }
@@ -1199,13 +1077,13 @@
             "name": "ada8f4e6",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のマテビュー："
+                "## 不一致のマテビュー："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 15,
+            "y": 20,
             "width": 6,
             "height": 1
           }
@@ -1245,7 +1123,7 @@
                       "expression": "`table_category` IN (2)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -1281,8 +1159,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "catalog_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "schema_name",
@@ -1308,8 +1185,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "schema_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "table_name",
@@ -1335,8 +1211,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "table_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "actual_description",
@@ -1362,8 +1237,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "actual_description"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "current_description",
@@ -1389,8 +1263,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "current_description"
+                    "preserveWhitespace": false
                   }
                 ]
               },
@@ -1635,13 +1508,38 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100014,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "refreshed_at_jst",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100015,
+                  "title": "refreshed_at_jst",
+                  "allowSearch": false,
+                  "alignContent": "left",
                   "allowHTML": false,
                   "highlightLinks": false,
                   "useMonospaceFont": false,
@@ -1657,7 +1555,7 @@
           },
           "position": {
             "x": 0,
-            "y": 16,
+            "y": 21,
             "width": 6,
             "height": 6
           }
@@ -1667,13 +1565,13 @@
             "name": "dd40eb12",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のビューテーブル："
+                "## 不一致のビューテーブル："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 22,
+            "y": 27,
             "width": 6,
             "height": 1
           }
@@ -1713,7 +1611,7 @@
                       "expression": "`table_category` IN (3)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -1749,8 +1647,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "catalog_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "schema_name",
@@ -1776,8 +1673,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "schema_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "table_name",
@@ -1803,8 +1699,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "table_name"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "actual_description",
@@ -1830,8 +1725,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "actual_description"
+                    "preserveWhitespace": false
                   },
                   {
                     "fieldName": "current_description",
@@ -1857,8 +1751,7 @@
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "current_description"
+                    "preserveWhitespace": false
                   }
                 ]
               },
@@ -2103,13 +1996,38 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100014,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "refreshed_at_jst",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100015,
+                  "title": "refreshed_at_jst",
+                  "allowSearch": false,
+                  "alignContent": "left",
                   "allowHTML": false,
                   "highlightLinks": false,
                   "useMonospaceFont": false,
@@ -2125,9 +2043,218 @@
           },
           "position": {
             "x": 0,
-            "y": 23,
+            "y": 28,
             "width": 6,
             "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "e8b81557",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Metadata Quality Dashboard\n",
+                "\n",
+                "メタデータ（description）が、[設定用テーブル](https://dbc-34699a31-e396.cloud.databricks.com/explore/data/dataplatform\\_public\\_published\\_dev/datasteward/description\\_settings?o=4302127999978392)と一致しないエンティティの特定と、設定状況の詳細比較"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "8b6ef920",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1d0a1089",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`flg_diff` IN (1)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "不一致数",
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "light": "#E8ECF0",
+                  "dark": "#E8ECF0"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#000000",
+                "dark": "#000000"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 5,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "29b69ae2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1d0a1089",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "総数",
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#11171C"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5F5F5",
+                "dark": "#F5F5F5"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 5,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "14ee5624",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Summary"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "5ec08dea",
+            "multilineTextboxSpec": {
+              "lines": [
+                "※総数は、評価対象となっているスキーマ数・テーブル数・マテリアライズドビュー数・ビュー数の合計を表しています。"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "c66c1f3e",
+            "multilineTextboxSpec": {
+              "lines": [
+                ""
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "0509aede",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1d0a1089",
+                  "fields": [
+                    {
+                      "name": "refreshed_at_jst",
+                      "expression": "`refreshed_at_jst`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "refreshed_at_jst"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 1
           }
         }
       ],
@@ -2178,10 +2305,10 @@
                   ],
                   "filters": [
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`table_category` IN (0)"
                     },
                     {
-                      "expression": "`table_category` IN (0)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -2417,11 +2544,11 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100008,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
                   "allowHTML": false,
@@ -2439,7 +2566,7 @@
           },
           "position": {
             "x": 0,
-            "y": 3,
+            "y": 8,
             "width": 6,
             "height": 5
           }
@@ -2467,31 +2594,41 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "measure(match_rate)"
+                  "fieldName": "measure(match_rate)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "一致率",
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#11171C"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5F5F5",
+                "dark": "#D3D3D3"
+              },
+              "widgetBorderColor": {
+                "dark": "#11171C"
               }
             }
           },
           "position": {
-            "x": 1,
-            "y": 0,
-            "width": 5,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "df72185e",
-            "multilineTextboxSpec": {
-              "lines": [
-                "# 一致率："
-              ]
-            }
-          },
-          "position": {
             "x": 0,
-            "y": 0,
-            "width": 1,
+            "y": 5,
+            "width": 2,
             "height": 2
           }
         },
@@ -2500,13 +2637,13 @@
             "name": "d92abe1c",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のスキーマ："
+                "## 不一致のスキーマ："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 7,
             "width": 6,
             "height": 1
           }
@@ -2516,13 +2653,13 @@
             "name": "60473b68",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のテーブル："
+                "## 不一致のテーブル："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 8,
+            "y": 13,
             "width": 6,
             "height": 1
           }
@@ -2570,7 +2707,7 @@
                       "expression": "`table_category` IN (1)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -2807,11 +2944,11 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100008,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
                   "allowHTML": false,
@@ -2829,7 +2966,7 @@
           },
           "position": {
             "x": 0,
-            "y": 9,
+            "y": 14,
             "width": 6,
             "height": 6
           }
@@ -2839,13 +2976,13 @@
             "name": "110e0421",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のマテビュー："
+                "## 不一致のマテビュー："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 15,
+            "y": 20,
             "width": 6,
             "height": 1
           }
@@ -2893,7 +3030,7 @@
                       "expression": "`table_category` IN (2)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -3130,11 +3267,11 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100008,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
                   "allowHTML": false,
@@ -3152,7 +3289,7 @@
           },
           "position": {
             "x": 0,
-            "y": 16,
+            "y": 21,
             "width": 6,
             "height": 6
           }
@@ -3162,13 +3299,13 @@
             "name": "3ad3c452",
             "multilineTextboxSpec": {
               "lines": [
-                "# 不一致のビューテーブル："
+                "## 不一致のビューテーブル："
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 22,
+            "y": 27,
             "width": 6,
             "height": 1
           }
@@ -3216,7 +3353,7 @@
                       "expression": "`table_category` IN (3)"
                     },
                     {
-                      "expression": "`status` IN (1, 2, 3)"
+                      "expression": "`flg_diff` IN (1)"
                     }
                   ],
                   "disaggregated": true
@@ -3453,11 +3590,11 @@
                   "linkTextTemplate": "{{ @ }}",
                   "linkTitleTemplate": "{{ @ }}",
                   "linkOpenInNewTab": true,
-                  "name": "status",
+                  "name": "flg_diff",
                   "type": "integer",
                   "displayAs": "number",
                   "order": 100008,
-                  "title": "status",
+                  "title": "flg_diff",
                   "allowSearch": false,
                   "alignContent": "right",
                   "allowHTML": false,
@@ -3475,9 +3612,217 @@
           },
           "position": {
             "x": 0,
-            "y": 23,
+            "y": 28,
             "width": 6,
             "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "e558cf39",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Metadata Quality Dashboard\n",
+                "\n",
+                "タグが、[設定用テーブル](https://dbc-34699a31-e396.cloud.databricks.com/explore/data/dataplatform\\_public\\_published\\_dev/datasteward/tag\\_settings?o=4302127999978392)と一致しないエンティティの特定と、設定状況の詳細比較"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "0f5113cb",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Summary"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "8daa0978",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dcf82608",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`flg_diff` IN (1)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "不一致数",
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "light": "#E8ECF0"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#000000",
+                "dark": "#000000"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 5,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "886cf1ed",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dcf82608",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "総数",
+                "headerAlignment": "center"
+              },
+              "style": {
+                "fontColor": {
+                  "dark": "#11171C"
+                }
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5F5F5",
+                "dark": "#D3D3D3"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 5,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "b5644338",
+            "multilineTextboxSpec": {
+              "lines": [
+                "※総数は、評価対象となっているスキーマ数・テーブル数・マテリアライズドビュー数・ビュー数の合計を表しています。"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "57c0727b",
+            "multilineTextboxSpec": {
+              "lines": [
+                ""
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "77c09e50",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dcf82608",
+                  "fields": [
+                    {
+                      "name": "refreshed_at_jst",
+                      "expression": "`refreshed_at_jst`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "refreshed_at_jst"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 1
           }
         }
       ],
@@ -3486,7 +3831,35 @@
   ],
   "uiSettings": {
     "theme": {
-      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+      "canvasBackgroundColor": {
+        "light": "#FAFAFB",
+        "dark": "#1F272D"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#11171C"
+      },
+      "fontColor": {
+        "light": "#11171C",
+        "dark": "#E8ECF0"
+      },
+      "selectionColor": {
+        "light": "#2272B4",
+        "dark": "#8ACAFF"
+      },
+      "visualizationColors": [
+        "#077A9D",
+        "#FFAB00",
+        "#00A972",
+        "#FF3621",
+        "#8BCAE7",
+        "#AB4057",
+        "#99DDB4",
+        "#FCA4A1",
+        "#919191",
+        "#BF7080"
+      ],
+      "widgetHeaderAlignment": "LEFT"
     }
   }
 }
