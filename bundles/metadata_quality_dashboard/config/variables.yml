@@ -14,7 +14,7 @@ targets:
     default: true
     variables:
       job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
-      warehouse_id: 063f605bedb825d2       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
+      warehouse_id: 46edcb25a205de46       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
       source_catalog: dataplatform_public_published_dev
       # webhook_notifications:
       #   on_failure:
@@ -22,7 +22,7 @@ targets:
   prod:
     variables:
       job_cluster_policy: 000916B510AA0B9B # https://dbc-34699a31-e396.cloud.databricks.com/compute/policies/000916B510AA0B9B?o=4302127999978392
-      warehouse_id: 063f605bedb825d2       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
+      warehouse_id: 46edcb25a205de46       # https://dbc-34699a31-e396.cloud.databricks.com/sql/warehouses/063f605bedb825d2?o=4302127999978392
       source_catalog: dataplatform_public_published
       # webhook_notifications:
       #   on_failure:
