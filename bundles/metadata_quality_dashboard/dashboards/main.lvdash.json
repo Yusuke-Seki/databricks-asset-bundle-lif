@@ -5,7 +5,7 @@
       "displayName": "description_checkings",
       "queryLines": [
         "SELECT *\r\n",
-        "FROM dataplatform_public_published_dev.datasteward.m_metadata_quality_descriptions"
+        "FROM {{source_catalog}}.datasteward.m_metadata_quality_descriptions"
       ],
       "columns": [
         {
@@ -14,7 +14,7 @@
           "expression": "COUNT_IF(flg_diff = 0)/COUNT(*)"
         }
       ],
-      "catalog": "dataplatform_public_published_dev",
+      "catalog": "{{source_catalog}}",
       "schema": "datasteward"
     },
     {
@@ -22,7 +22,7 @@
       "displayName": "tag_checkings",
       "queryLines": [
         "SELECT *\r\n",
-        "FROM dataplatform_public_published_dev.datasteward.m_metadata_quality_tags"
+        "FROM {{source_catalog}}.datasteward.m_metadata_quality_tags"
       ],
       "columns": [
         {
@@ -31,7 +31,7 @@
           "expression": "COUNT_IF(flg_diff = 0)/COUNT(*)"
         }
       ],
-      "catalog": "dataplatform_public_published_dev",
+      "catalog": "{{source_catalog}}",
       "schema": "datasteward"
     }
   ],
