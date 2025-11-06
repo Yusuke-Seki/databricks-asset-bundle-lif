@@ -9,5 +9,4 @@ resources:
       display_name: "Metadata Quality Dashboard"
       file_path: ../dashboards/main.lvdash.json
       warehouse_id: ${var.warehouse_id}
-      embed_credentials: true
       <<: *permissions
