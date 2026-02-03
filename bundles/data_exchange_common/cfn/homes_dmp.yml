@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Cross-account infra for exporting objects from Databricks to S3"
+
+Parameters:
+  Env:
+    Type: String
+    AllowedValues: [dev, prod]
+    Default: dev
+
+Mappings:
+  BucketName:
+    dev:
+      Name: "data-exchange-common-from-databricks-test"
+    prod:
+      Name: "data-exchange-common-from-databricks"
+  RoleName:
+    dev:
+      Name: "DatabricksOutputCommonTestRole"
+    prod:
+      Name: "DatabricksOutputCommonRole"
+  ExternalId:
+    dev:
+      Name: "cc7eeacc-7cd6-4a1b-8a25-afddc20cbfde"
+    prod:
+      Name: "cc7eeacc-7cd6-4a1b-8a25-afddc20cbfde"
+
+Resources:
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !FindInMap [BucketName, !Ref Env, Name]
+      PublicAccessBlockConfiguration: # パブリックアクセスブロック
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      OwnershipControls: # オブジェクト所有権
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      LifecycleConfiguration: # ライフサイクル設定
+        Rules:
+          - Id: ExpireAllObjectsAfter7Days
+            Status: Enabled
+            ExpirationInDays: 7
+  
+  AssumedFromDatabricksRole:
+    Type: AWS::IAM::Role
+    DependsOn: 
+      - OutputBucket
+    Properties:
+      RoleName: !FindInMap [RoleName, !Ref Env, Name]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowDatabricksAssume
+            Effect: Allow
+            Principal:
+              AWS: "arn:aws:iam::414351767826:role/unity-catalog-prod-UCMasterRole-14S5ZJVKOTYTL"
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !FindInMap [ExternalId, !Ref Env, Name]
+          - Sid: AllowSelfAssume
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: sts:AssumeRole
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn: !Sub
+                  - "arn:aws:iam::${AWS::AccountId}:role/${RN}"
+                  - { RN: !FindInMap [RoleName, !Ref Env, Name] }
+      Policies:
+        - PolicyName: put-object-from-databricks
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # バケットレベルの権限
+              - Sid: AllowListAndLocation
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !Sub
+                  - "arn:aws:s3:::${BN}"
+                  - { BN: !FindInMap [BucketName, !Ref Env, Name] }
+
+              # オブジェクトレベルの権限
+              - Sid: AllowObjectRW
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject    # Sparkの書き込み処理で必要
+                  - s3:DeleteObject # Sparkの書き込み処理で必要
+                  - s3:AbortMultipartUpload # アップロード失敗時の処理で必要
+                Resource: !Sub
+                  - "arn:aws:s3:::${BN}/*"
+                  - { BN: !FindInMap [BucketName, !Ref Env, Name] }
+              
+              # self-assume用
+              - Sid: AllowSelfAssume
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub
+                  - "arn:aws:iam::${AWS::AccountId}:role/${RN}"
+                  - { RN: !FindInMap [RoleName, !Ref Env, Name] }
+
+  # OutputBucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   DependsOn: 
+  #     - AssumedFromDatabricksRole
+  #     - OutputBucket
+  #   Properties:
+  #     Bucket: !Ref OutputBucket
+  #     PolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         # バケットレベルの権限
+  #         - Sid: AllowListAndLocation
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !GetAtt AssumedFromDatabricksRole.Arn
+  #           Action:
+  #             - s3:ListBucket
+  #             - s3:GetBucketLocation
+  #           Resource: !Sub
+  #             - "arn:aws:s3:::${BN}"
+  #             - { BN: !FindInMap [BucketName, !Ref Env, Name] }
+
+  #         # オブジェクトレベルの権限
+  #         - Sid: AllowObjectRW
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !GetAtt AssumedFromDatabricksRole.Arn
+  #           Action:
+  #             - s3:PutObject
+  #             - s3:GetObject    # Sparkの書き込み処理で必要
+  #             - s3:DeleteObject # Sparkの書き込み処理で必要
+  #             - s3:AbortMultipartUpload # アップロード失敗時の処理で必要
+  #           Resource: !Sub
+  #             - "arn:aws:s3:::${BN}/*"
+  #             - { BN: !FindInMap [BucketName, !Ref Env, Name] }
